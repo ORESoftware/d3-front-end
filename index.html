@@ -10,8 +10,9 @@
     .svg-container {
         display: inline-block;
         position: relative;
-        width: 100%;
-        padding-bottom: 100%;
+        width: 90vw;
+        height: 90vh;
+        margin:20px;
         vertical-align: top;
         overflow: hidden;
     }
@@ -60,7 +61,7 @@
     ></svg>
 </div>
 
-<!-- TODO: 1. scale drawing to 90% of viewport (vertically and horizontally) -->
+<!-- TODO: ✔️ 1. scale drawing to 90% of viewport (vertically and horizontally) -->
 <!-- TODO: 2. add permanent labels to nodes -->
 <!-- TODO: 3. add permanent icons to nodes (any image url is fine for now)-->
 <!-- TODO: 4. allow for triangle or rectangular shapes in nodes -->
@@ -160,6 +161,7 @@
 
         let svg = d3
             .select("svg")
+            .attr('viewBox',`0 0 ${width} ${height}`)
             .attr("width", width)
             .attr("height", height);
 
@@ -304,6 +306,24 @@
             d.fx = null;
             d.fy = null;
             placeLabelsAndIcons();
+        }
+
+        d3.select(window).on('resize', resize); 
+
+        function resize() {
+
+            let newHeight = window.innerHeight;
+            let newWidth = window.innerHeight;
+
+            // There is still a small bug when you resize back up, need to dig in deeper.
+            // I think the viewBox has something to do with it.
+
+            d3
+            .select("svg")
+            // .attr('viewBox',`0 0 ${newWidth} ${newHeight}`)
+            .attr("width", newWidth)
+            .attr("height", newHeight);
+
         }
     }
 
