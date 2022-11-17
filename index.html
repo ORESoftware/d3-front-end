@@ -7,6 +7,11 @@
 </head>
 
 <style>
+    body {
+        margin: 0;
+        background: #eee;
+    }
+
     .svg-container {
         display: inline-block;
         position: relative;
@@ -35,19 +40,29 @@
 	}
 
 	g div {
-		height: 80px;
-		width: 180px;
+		height: 60px;
+		width: 120px;
 		padding: 10px;
-		background: whitesmoke;
+		background: #fff;
 		text-align: center;
 		vertical-align: middle;
 		white-space: pre;
 		visibility: hidden;
+        border-radius: 10px;
+        box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
 	}
 
 	g:hover div {
 		visibility: visible;
 	}
+/* 
+    g image {
+        visibility: hidden;
+    }
+    
+    g:hover image {
+        visibility: visible;
+    } */
 </style>
 
 <body>
@@ -61,17 +76,26 @@
     ></svg>
 </div>
 
-<!-- TODO: ✔️ 1. scale drawing to 90% of viewport (vertically and horizontally) -->
-<!-- TODO: 2. add permanent labels to nodes  // (looks already done?) -->
-<!-- TODO: 3. add permanent icons to nodes (any image url is fine for now) // (looks already done?) -->
-<!-- TODO: 4. allow for triangle or rectangular shapes in nodes -->
-<!-- TODO: 5. add on-hover text (show metadata when hovering over) -->
+<!-- * TODO: 1. scale drawing to 90% of viewport (vertically and horizontally) -->
+<!-- TODO: 2. add permanent labels to nodes -->
+<!-- TODO: 3. add permanent icons to nodes (any image url is fine for now)-->
+<!-- X TODO: 4. allow for triangle or rectangular shapes in nodes -->
+<!-- ** TODO: 5. add on-hover text (show metadata when hovering over) -->
 <!-- TODO: 6. add dynamic text above node (gets updated constantly from backend) -->
 <!-- TODO: 7. add dynamic images/drawings/animation along links (gets updated constantly from backend) -->
 <!-- TODO: 8. change forces so the more force between nodes given more degrees of separation/freedom -->
 <!-- TODO: 9. allow user to toggle on/off nodes self-separating - default is on - if it's off: then user can drag nodes wherever they want  -->
-<!-- TODO: 10: on-hover over node -> show histogram -->
-<!-- TODO: 11: on-hover over link -> show histogram -->
+<!-- ** TODO: 10: on-hover over node -> show histogram -->
+<!-- ** TODO: 11: on-hover over link -> show histogram -->
+
+<!-- TODO:make initial separating force a little stronger, so that nodes are further apart (more spaced out). -->
+<!-- TODO:2. on/in initial render, avoid crossing lines/edges -->
+<!-- TODO: 3. avoid crossing links - https://stackoverflow.com/questions/74453071/avoid-crossing-links -->
+<!-- TODO: 4. rendering is optimization problem, roughly: -->
+<!--       * minimize link crossing/overlap. -->
+<!--       * maximize space between nodes. -->
+<!--       * but keep drawing within container.-->
+
 
 <!--we are using version 7 of d3, use the minified version later -->
 <script src="https://d3js.org/d3.v7.js"></script>
@@ -99,7 +123,7 @@
         'black'
     ];
 
-    // TODO: https://chartio.com/resources/tutorials/how-to-resize-an-svg-when-the-window-is-resized-in-d3-js/
+    // ** TODO: https://chartio.com/resources/tutorials/how-to-resize-an-svg-when-the-window-is-resized-in-d3-js/
 
 	const width = window.innerWidth;
 	const height = window.innerHeight;
@@ -107,7 +131,9 @@
 	// I just made up a formula, but radius should be a function of window size
 	// (and eventually number of nodes as well)
 	const nodeRadius = Math.max(minRadius, Math.floor(Math.min(width, height) / 25));
-	console.log("node radius: " + nodeRadius);
+	// console.log("node radius: " + nodeRadius);
+
+    let histogramShowing = false;
 
 	const placeLabelsAndIcons = () => {
 		const svg = d3.select("svg");
@@ -117,33 +143,48 @@
 			svg.selectAll("image").remove();
 			svg.selectAll("foreignObject").remove();
 
-			const gs = svg.selectAll("g");
+			const gs = svg.selectAll("g")
+                .on('click', d => {
+                    histogramShowing = !histogramShowing;
+                    // console.log(d3.select(this).histogramShowing) 
+                    // d3.select(this).histogramShowing = true
+                    // d3.select(this)
+                    //     .style('background', '#ddd')
+                });
+
+            // svg.selectAll("g").on("click", d => { console.log("Clicked " + d.histogramShowing); });
 
 			gs.append("image")
-				.attr("x", d => d.x - d.size / 2)
-				.attr("y", d => d.y - d.size / 2)
-				.attr("width", d => d.size)
-				.attr("height", d => d.size)
+				.attr("x", d => d.x - d.size )
+				.attr("y", d => d.y - 1.8 * d.size)
+				.attr("width", d => d.size /2)
+				.attr("height", d => d.size /2)
 				.attr("href", d => d.iconUrl);
 
-			gs.append("text")
-				.attr("x", d => d.x)
-				.attr("y", d => d.y + d.size)
-				.attr("text-anchor", "middle")
-				.text(d => d.label);
+            // gs.append("text")
+			// 	.attr("x", d => d.x + d.size / 2)
+			// 	.attr("y", d => d.y - 1.9 * d.size)
+			// 	.attr("text-anchor", "middle")
+			// 	.text(d => 'ID: ' + d.id);
 
 			gs.append("text")
-				.attr("x", d => d.x)
-				.attr("y", d => d.y - 1.1 * d.size)
+				.attr("x", d => d.x + d.size / 3)
+				.attr("y", d => d.y - 1.5 * d.size)
 				.attr("text-anchor", "middle")
-				.text(d => d.id + '  -  ' + d.label + '  -  ' +d.name );
+				.text(d => 'Name: ' + d.name);
+
+			// gs.append("text")
+			// 	.attr("x", d => d.x + d.size / 2)
+			// 	.attr("y", d => d.y - 1.1 * d.size)
+            //     .attr("text-anchor", "middle")
+			// 	.text(d => 'Label: ' + d.label);
 
 			gs.append("foreignObject")
-				.attr("x", d => d.x - 100)
-				.attr("y", d => d.y - d.size * 2 - 100)
+				.attr("x", d => d.x - 70)
+				.attr("y", d => d.y + 1.1 * d.size)
 				.style("overflow", "visible")
 				.append("xhtml:div")
-				.text(d => "ID: " + d.id + "\nName: " + d.name + "\nother info...");
+				.text(d => histogramShowing ? "histogram" : "ID: " + d.id + "\nName: " + d.name + '\nLabel: ' + d.label);
     	}
     };
 
@@ -156,7 +197,7 @@
                 // TODO: down the line, will be updated with websocket conn
             }
 
-			placeLabelsAndIcons();
+			// placeLabelsAndIcons();
         }, 2000);
 
         let svg = d3
@@ -244,11 +285,11 @@
         // }
 
         // data.nodes contains all nodes
-        for(let i = 0; i < nodes.length - 1; i++) {
-            for(let j = i + 1; j < nodes.length; j++) {
-                simulation.force();
-            }
-        }
+        // for(let i = 0; i < nodes.length - 1; i++) {
+        //     for(let j = i + 1; j < nodes.length; j++) {
+        //         simulation.force();
+        //     }
+        // }
 
         function ticked() {
             // console.log(simulation.alpha());
@@ -279,6 +320,8 @@
                     .attr("x2", m2.x)
                     .attr("y2", m2.y);
             });
+
+            placeLabelsAndIcons();
         }
 
         function dragStart(event, d) {
@@ -416,7 +459,8 @@
                 name: z.name,
                 id: z.id,
                 iconUrl: z.iconUrl,
-                histogram: new Map()
+                histogram: new Map(),
+                // histogramShowing: false
             });
 
             // we only need-be concerned with connectionsOut, not connectionsIn, in order to complete graph
