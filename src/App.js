@@ -110,24 +110,14 @@ const App = function _App() {
 
   let histogramShowing = false;
 
+  // TODO: implement some state mgmt so we can use some dynamics calculations for the graph.
   const initialState = {
-    colors: [
-      'red',
-      'blue',
-      'indigo',
-      'violet',
-      'purple',
-      'orange',
-      'pink',
-      'yellow',
-      'maroon',
-      'black'
-    ],
-    width: window.innerWidth,
-    height: window.innerHeight,
-    minRadius: 20,
-    nodeRadius: Math.max(minRadius, Math.floor(Math.min(width, height) / 25)),
-    histogramShowing: false
+    colors,
+    width,
+    height,
+    minRadius,
+    nodeRadius,
+    histogramShowing
   };
 
   const run = (nodes, links) => {
@@ -145,16 +135,16 @@ const App = function _App() {
       .append('div')
       .classed('svg-container', true)
       .append('svg')
-
       .attr('preserveAspectRatio', 'xMinYMin meet')
-      .attr('viewBox', '0 0 600 400')
-      .classed('svg-content-responsive', true);
-
-    let svg = d3
-      .select('svg')
       .attr('viewBox', `0 0 ${width} ${height}`)
+      .classed('svg-content-responsive', true)
       .attr('width', width)
       .attr('height', height);
+
+    let svg = d3.select('svg');
+    // .attr('viewBox', `0 0 ${width} ${height}`)
+    // .attr('width', width)
+    // .attr('height', height);
 
     // append a path marker to svg defs
     svg
@@ -228,21 +218,6 @@ const App = function _App() {
       )
       .on('tick', ticked);
 
-    // function isolate(force, nodeA, nodeB) {
-    //     let initialize = force.initialize;
-    //     force.initialize = function() {
-    //         initialize.call(force, [nodeA, nodeB]);
-    //     };
-    //     return force;
-    // }
-
-    // data.nodes contains all nodes
-    // for(let i = 0; i < nodes.length - 1; i++) {
-    //     for(let j = i + 1; j < nodes.length; j++) {
-    //         simulation.force();
-    //     }
-    // }
-
     function ticked() {
       // console.log(simulation.alpha());
 
@@ -312,7 +287,15 @@ const App = function _App() {
       // I think the viewBox has something to do with it.
 
       d3.select('svg')
-        // .attr('viewBox',`0 0 ${newWidth} ${newHeight}`)
+        .attr('viewBox', `0 0 ${newWidth * 1.1} ${newHeight * 1.1}`)
+        .attr('preserveAspectRatio', 'xMinYMin meet')
+        .attr('width', newWidth)
+        .attr('height', newHeight);
+
+      console.log({ width, height });
+      console.log({ newWidth, newHeight });
+
+      d3.select('.svg-container')
         .attr('width', newWidth)
         .attr('height', newHeight);
     }
