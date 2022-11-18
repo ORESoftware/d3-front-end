@@ -1,6 +1,4 @@
-require('./styles.scss');
-const App = require('./App').default;
-
-// const render = () => (document.getElementById('App').innerHTML = App());
+import App from './App';
+import './styles.scss';
 
 document.addEventListener('DOMContentLoaded', () => App());

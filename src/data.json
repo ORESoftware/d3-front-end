@@ -1,0 +1,75 @@
+{
+    "formation": [
+        {
+            "name": "A",
+            "id": "A",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
+            "label": "A",
+            "connectionsOut": [
+                "B",
+                "C"
+            ]
+        },
+        {
+            "name": "F",
+            "id": "F",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
+            "label": "F",
+            "connectionsOut": [
+                "C"
+            ]
+        },
+        {
+            "name": "B",
+            "id": "B",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
+            "label": "B",
+            "connectionsOut": [
+                "C"
+            ]
+        },
+        {
+            "name": "C",
+            "id": "C",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
+            "label": "C",
+            "connectionsOut": [
+                "D"
+            ]
+        },
+        {
+            "name": "D",
+            "id": "D",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
+            "label": "D",
+            "connectionsOut": [
+                "E"
+            ]
+        },
+        {
+            "name": "E",
+            "id": "E",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
+            "label": "E",
+            "connectionsOut": []
+        }
+    ]
+}

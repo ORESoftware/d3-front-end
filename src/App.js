@@ -1,13 +1,33 @@
 import * as d3 from 'd3';
+import data from './data.json';
+import { fisherYatesShuffle } from './utils';
+
+/****
+ * * TODO: 1. scale drawing to 90% of viewport (vertically and horizontally) 
+ TODO: 2. add permanent labels to nodes 
+ TODO: 3. add permanent icons to nodes (any image url is fine for now)
+ TODO: 4. allow for triangle or rectangular shapes in nodes 
+ ** TODO: 5. add on-hover text (show metadata when hovering over) 
+ TODO: 6. add dynamic text above node (gets updated constantly from backend) 
+ TODO: 7. add dynamic images/drawings/animation along links (gets updated constantly from backend) 
+ TODO: 8. change forces so the more force between nodes given more degrees of separation/freedom 
+ TODO: 9. allow user to toggle on/off nodes self-separating - default is on - if it's off: then user can drag nodes wherever they want  
+ ** TODO: 10: on-hover over node -> show histogram 
+ ** TODO: 11: on-hover over link -> show histogram 
+
+ TODO:make initial separating force a little stronger, so that nodes are further apart (more spaced out). 
+ TODO:2. on/in initial render, avoid crossing lines/edges 
+ TODO: 3. avoid crossing links - https://stackoverflow.com/questions/74453071/avoid-crossing-links 
+ TODO: 4. rendering is optimization problem, roughly: 
+       * minimize link crossing/overlap. 
+       * maximize space between nodes. 
+       * but keep drawing within container.
+
+ TODO: https://chartio.com/resources/tutorials/how-to-resize-an-svg-when-the-window-is-resized-in-d3-js/ 
+
+ */
 
 const App = function _App() {
-  const fisherYatesShuffle = function* (deck) {
-    for (let i = deck.length - 1; i >= 0; i--) {
-      const swapIndex = Math.floor(Math.random() * (i + 1));
-      [deck[i], deck[swapIndex]] = [deck[swapIndex], deck[i]];
-      yield deck[i];
-    }
-  };
   const placeLabelsAndIcons = () => {
     const svg = d3.select('svg');
 
@@ -16,7 +36,7 @@ const App = function _App() {
       svg.selectAll('image').remove();
       svg.selectAll('foreignObject').remove();
 
-      const gs = svg.selectAll('g').on('click', (d) => {
+      const gs = svg.selectAll('g').on('click', d => {
         histogramShowing = !histogramShowing;
         // console.log(d3.select(this).histogramShowing)
         // d3.select(this).histogramShowing = true
@@ -27,11 +47,11 @@ const App = function _App() {
       // svg.selectAll("g").on("click", d => { console.log("Clicked " + d.histogramShowing); });
 
       gs.append('image')
-        .attr('x', (d) => d.x - d.size)
-        .attr('y', (d) => d.y - 1.8 * d.size)
-        .attr('width', (d) => d.size / 2)
-        .attr('height', (d) => d.size / 2)
-        .attr('href', (d) => d.iconUrl);
+        .attr('x', d => d.x - d.size)
+        .attr('y', d => d.y - 1.8 * d.size)
+        .attr('width', d => d.size / 2)
+        .attr('height', d => d.size / 2)
+        .attr('href', d => d.iconUrl);
 
       // gs.append("text")
       // 	.attr("x", d => d.x + d.size / 2)
@@ -40,10 +60,10 @@ const App = function _App() {
       // 	.text(d => 'ID: ' + d.id);
 
       gs.append('text')
-        .attr('x', (d) => d.x + d.size / 3)
-        .attr('y', (d) => d.y - 1.5 * d.size)
+        .attr('x', d => d.x + d.size / 3)
+        .attr('y', d => d.y - 1.5 * d.size)
         .attr('text-anchor', 'middle')
-        .text((d) => 'Name: ' + d.name);
+        .text(d => 'Name: ' + d.name);
 
       // gs.append("text")
       // 	.attr("x", d => d.x + d.size / 2)
@@ -52,17 +72,18 @@ const App = function _App() {
       // 	.text(d => 'Label: ' + d.label);
 
       gs.append('foreignObject')
-        .attr('x', (d) => d.x - 70)
-        .attr('y', (d) => d.y + 1.1 * d.size)
+        .attr('x', d => d.x - 70)
+        .attr('y', d => d.y + 1.1 * d.size)
         .style('overflow', 'visible')
         .append('xhtml:div')
-        .text((d) =>
+        .text(d =>
           histogramShowing
             ? 'histogram'
             : 'ID: ' + d.id + '\nName: ' + d.name + '\nLabel: ' + d.label
         );
     }
   };
+
   const colors = [
     'red',
     'blue',
@@ -73,7 +94,7 @@ const App = function _App() {
     'pink',
     'yellow',
     'maroon',
-    'black',
+    'black'
   ];
 
   const width = window.innerWidth;
@@ -100,13 +121,13 @@ const App = function _App() {
       'pink',
       'yellow',
       'maroon',
-      'black',
+      'black'
     ],
     width: window.innerWidth,
     height: window.innerHeight,
     minRadius: 20,
     nodeRadius: Math.max(minRadius, Math.floor(Math.min(width, height) / 25)),
-    histogramShowing: false,
+    histogramShowing: false
   };
 
   const run = (nodes, links) => {
@@ -122,13 +143,11 @@ const App = function _App() {
 
     d3.select('div#App')
       .append('div')
-      // Container class to make it responsive.
       .classed('svg-container', true)
       .append('svg')
-      // Responsive SVG needs these 2 attributes and no width and height attr.
+
       .attr('preserveAspectRatio', 'xMinYMin meet')
       .attr('viewBox', '0 0 600 400')
-      // Class to make it responsive.
       .classed('svg-content-responsive', true);
 
     let svg = d3
@@ -144,7 +163,7 @@ const App = function _App() {
       .data(['dominating'])
       .enter()
       .append('marker')
-      .attr('id', (d) => d)
+      .attr('id', d => d)
       .attr('viewBox', '0 -5 10 10')
       .attr('refX', 0)
       .attr('refY', 0)
@@ -162,7 +181,7 @@ const App = function _App() {
       .attr('stroke', 'black')
       .attr('stroke-width', 1)
       // add marker to line
-      .attr('marker-end', (d) => 'url(#dominating)');
+      .attr('marker-end', d => 'url(#dominating)');
 
     let nodeSelection = svg
       .selectAll('circle')
@@ -170,11 +189,15 @@ const App = function _App() {
       .enter()
       .append('g')
       .append('circle')
-      .attr('r', (d) => d.size)
-      .attr('fill', (d) => d.color)
-      .attr('img', (d) => d.icon)
+      .attr('r', d => d.size)
+      .attr('fill', d => d.color)
+      .attr('img', d => d.icon)
       .call(
-        d3.drag().on('start', dragStart).on('drag', drag).on('end', dragEnd)
+        d3
+          .drag()
+          .on('start', dragStart)
+          .on('drag', drag)
+          .on('end', dragEnd)
       );
 
     let simulation = d3.forceSimulation(nodes);
@@ -193,7 +216,7 @@ const App = function _App() {
         'links',
         d3
           .forceLink(links)
-          .id((d) => d.id)
+          .id(d => d.id)
           // .distance(d => 5 * (d.source.size + d.target.size))
           // TODO force distance between all elements, not just connected ones
           // TODO in fact, force should be greater amongst non-connected elements
@@ -223,16 +246,16 @@ const App = function _App() {
     function ticked() {
       // console.log(simulation.alpha());
 
-      nodeSelection.attr('cx', (d) => d.x).attr('cy', (d) => d.y);
+      nodeSelection.attr('cx', d => d.x).attr('cy', d => d.y);
 
       linkSelection
-        .attr('x1', (d) => d.source.x)
-        .attr('y1', (d) => d.source.y)
-        .attr('x2', (d) => d.target.x)
-        .attr('y2', (d) => d.target.y);
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
 
       // recalculate and back off the distance
-      linkSelection.each(function (d, i, n) {
+      linkSelection.each(function(d, i, n) {
         // current path length
         const pl = this.getTotalLength();
         // radius of marker head plus def constant
@@ -298,77 +321,6 @@ const App = function _App() {
   const nodes = [];
   const links = [];
 
-  const data = {
-    formation: [
-      {
-        name: 'A',
-        id: 'A',
-        entity: {
-          initialGraphData: true,
-        },
-        iconUrl:
-          'https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png',
-        label: 'A',
-        connectionsOut: ['B', 'C'],
-      },
-      {
-        name: 'F',
-        id: 'F',
-        entity: {
-          initialGraphData: true,
-        },
-        iconUrl:
-          'https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png',
-        label: 'F',
-        connectionsOut: ['C'],
-      },
-      {
-        name: 'B',
-        id: 'B',
-        entity: {
-          initialGraphData: true,
-        },
-        iconUrl:
-          'https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png',
-        label: 'B',
-        connectionsOut: ['C'],
-      },
-      {
-        name: 'C',
-        id: 'C',
-        entity: {
-          initialGraphData: true,
-        },
-        iconUrl:
-          'https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png',
-        label: 'C',
-        connectionsOut: ['D'],
-      },
-      {
-        name: 'D',
-        id: 'D',
-        entity: {
-          initialGraphData: true,
-        },
-        iconUrl:
-          'https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png',
-        label: 'D',
-        connectionsOut: ['E'],
-      },
-      {
-        name: 'E',
-        id: 'E',
-        entity: {
-          initialGraphData: true,
-        },
-        iconUrl:
-          'https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png',
-        label: 'E',
-        connectionsOut: [],
-      },
-    ],
-  };
-
   if (data.formation) {
     for (const z of data.formation) {
       nodes.push({
@@ -378,7 +330,7 @@ const App = function _App() {
         name: z.name,
         id: z.id,
         iconUrl: z.iconUrl,
-        histogram: new Map(),
+        histogram: new Map()
         // histogramShowing: false
       });
 
