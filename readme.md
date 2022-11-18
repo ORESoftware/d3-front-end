@@ -1,5 +1,11 @@
 # d3-front-end
 
+## Loading The App
+
+To install deps, and start the webpack server --> `npm i && npm run start`.
+
+It will open `localhost:3000`. Hot reloading is enabled.
+
 ### Getting started
 
 Todo list is in todos.md.
