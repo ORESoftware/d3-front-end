@@ -40,12 +40,9 @@ g:hover {
 }
 
 g div {
-    /* height: 75px;
-    height: 60px;
-    width: 120px; */
     padding: 10px;
     background: #fff;
-    text-align: center;
+    /* text-align: center; */
     vertical-align: middle;
     white-space: pre;
     visibility: hidden;

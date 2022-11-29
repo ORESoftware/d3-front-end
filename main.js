@@ -101,9 +101,9 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
 
 	// Add text to each node group.
 	nodeGroups.append("text")
-		.attr("x", d => d.size)
+		.attr("x", 0)
 		.attr("y", d => -1.5 * d.size)
-		.attr("text-anchor", "middle")
+		.attr("text-anchor", "left")
 		.text(d => 'Name: ' + d.name);
 
     nodeGroups.append("foreignObject")
@@ -128,8 +128,7 @@ const createMetadataText = function(selection, d) {
 }
 
 const getPlaceholderData = (id) => {
-    return [{val: 9.5}, {val: 2}, {val: 2.5}, {val: 3}, {val: 3.3},
-        {val: 4}, {val: 5.6}, {val: 2.1}, {val: 1.7}, {val: 7}];
+    return [9.5, 2, 2.5, 3, 3.3, 4, 5.6, 2.1, 1.7, 7];
 };
 
 // Creating a basic histogram: https://d3-graph-gallery.com/graph/histogram_basic.html
@@ -153,7 +152,7 @@ const createHistogram = (selection, data, title) => {
 
     // And apply this function to data to get the bins
     const x = d3.scaleLinear()
-        .domain([0, d3.max(data, function(d) { return +d.val })])
+        .domain([0, d3.max(data, function(d) { return +d })])
         .range([0, width]);
     histSvg.append("g")
         .attr("transform", "translate(" + margin.left + "," + (height + margin.top) + ")")
@@ -162,10 +161,10 @@ const createHistogram = (selection, data, title) => {
     // set the parameters for the histogram
     const histogram = d3.histogram()
         .value(function (d) {
-            return d.val;
+            return d;
         })
         .domain(x.domain())
-        .thresholds(x.ticks(10)); // number of bins
+        .thresholds(x.ticks(5)); // number of bins
 
     const bins = histogram(data);
 
@@ -208,14 +207,20 @@ const createQueueLengthHistograms = function(selection, d) {
 }
 
 const createWaitTimeHistograms = function(selection, d) {
-    console.log(d);
-    selection.text("Wait times");
-    selection.attr("height", 400);
-
-    const data = getPlaceholderData(d.id);
-    createHistogram(selection, data, "Input Queue");
-    createHistogram(selection, data, "Processing Queue");
-    createHistogram(selection, data, "Output Queue");
+    if (d.inputQueueTimeWaiting) {
+        selection.text("Wait times");
+        selection.attr("height", 400);
+        createHistogram(selection,  d.inputQueueTimeWaiting.dist, "Input Queue");
+        createHistogram(selection,  d.processingQueueTimeWaiting.dist, "Processing Queue");
+        createHistogram(selection, d.outputQueueTimeWaiting.dist, "Output Queue");
+    } else {
+        selection.text("Wait times (placeholder)");
+        selection.attr("height", 400);
+        const data = getPlaceholderData(d.id);
+        createHistogram(selection, data, "Input Queue");
+        createHistogram(selection, data, "Processing Queue");
+        createHistogram(selection, data, "Output Queue");
+    }
 }
 
 const updateGraph = function(svg, nodes, updates) {
@@ -239,16 +244,24 @@ const updateGraph = function(svg, nodes, updates) {
     });
 
     // Note: eventually, when you add or remove nodes, you can define an
-    // "enter" or "remove" function in join to handle those changes.
+    // "enter" or "exit" function in join to handle those changes.
     svg.selectAll("g.gnode")
 		.data(nodes, d => d.id)
-        .join(update => {
-            // update.selectAll("foreignObject")
-            //     .select("div")
-            //     .call(updateDisplayState, d);
-            update.select("text").text("Updated!");
-            // update.select("foreignObject")
-        })
+        .join(
+            enter => {
+                console.log("Enter not implemented");
+            },
+            update => {
+                console.log(update);
+                update.select("text").text(d => "Updated!" + d.id);
+                update.select("foreignObject")
+                    .select("div")
+                    .call(createMetadataText);
+            },
+            exit => {
+                console.log("Exit not implemented.")
+            }
+        );
 }
 
 const run = (nodes, links) => {
