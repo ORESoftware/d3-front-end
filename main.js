@@ -1,33 +1,6 @@
 const client = new WebSocket('ws://0.0.0.0:5900');
 let simulation;
 
-document.turnOffPhysics = () => {
-    simulation.stop();
-    simulation
-        .force("center", null)
-        .force("nodes", null)
-        .force("radial", null)
-        .force("charge", null)
-        .force("collision", null)
-        .force("links", null);
-};
-
-document.startSim = () => {
-    client.send({startSim: true});
-};
-
-document.stopSim = () => {
-    client.send({stopSim: true});
-};
-
-document.pauseSim = () => {
-    client.send({pauseSim: true});
-};
-
-document.restartSim = () => {
-    client.send({restartSim: true});
-};
-
 client.addEventListener('message', m => {
     console.log('change event:', m);
     location.reload(); // reload page
@@ -49,6 +22,19 @@ const displayStates = ["Metadata", "QueueLengthHistogram", "WaitTimeHistogram"];
 const getNextDisplayState = function (currentState) {
     let idx = displayStates.findIndex((element) => element == currentState)
     return displayStates[(idx + 1) % displayStates.length];
+};
+
+const updateDisplayState = function(div, d) {
+    d.displayState = getNextDisplayState(d.displayState);
+    if (d.displayState == "Metadata") {
+        div.call(createMetadataText, d);
+    }
+    if (d.displayState == "QueueLengthHistogram") {
+        div.call(createQueueLengthHistograms, d);
+    }
+    if (d.displayState == "WaitTimeHistogram") {
+        div.call(createWaitTimeHistograms, d);
+    }
 };
 
 const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
@@ -98,28 +84,11 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
 				.on("end", dragEnd)
 		)
         .on("click", function(e, d) {
-            d.displayState = getNextDisplayState(d.displayState);
-            if (d.displayState == "Metadata") {
-                nodeGroups
+            let div = nodeGroups
                 .selectAll("foreignObject")
                 .filter(function(d2, i) { return d.id == d2.id;})
-                .select("div")
-                    .call(createMetadataText, d);
-            }
-            if (d.displayState == "QueueLengthHistogram") {
-                nodeGroups
-                    .selectAll("foreignObject")
-                    .filter(function(d2, i) { return d.id == d2.id;})
-                    .select("div")
-                        .call(createQueueLengthHistograms, d.id);
-            }
-            if (d.displayState == "WaitTimeHistogram") {
-                nodeGroups
-                    .selectAll("foreignObject")
-                    .filter(function(d2, i) { return d.id == d2.id;})
-                    .select("div")
-                        .call(createWaitTimeHistograms, d.id);
-            }
+                .select("div");
+            updateDisplayState(div, d);
         });
 
 	// Add an image to each node group.
@@ -228,24 +197,58 @@ const createHistogram = (selection, data, title) => {
             .style("fill", "#69b3a2");
 };
 
-const createQueueLengthHistograms = function(selection, id) {
+const createQueueLengthHistograms = function(selection, d) {
     selection.text("Queue lengths");
     selection.attr("height", 400);
 
-    const data = getPlaceholderData(id);
+    const data = getPlaceholderData(d.id);
     createHistogram(selection, data, "Input Queue");
     createHistogram(selection, data, "Processing Queue");
     createHistogram(selection, data, "Output Queue");
 }
 
-const createWaitTimeHistograms = function(selection, id) {
+const createWaitTimeHistograms = function(selection, d) {
+    console.log(d);
     selection.text("Wait times");
     selection.attr("height", 400);
 
-    const data = getPlaceholderData(id);
+    const data = getPlaceholderData(d.id);
     createHistogram(selection, data, "Input Queue");
     createHistogram(selection, data, "Processing Queue");
     createHistogram(selection, data, "Output Queue");
+}
+
+const updateGraph = function(svg, nodes, updates) {
+    // For now, we assume that the graph structure isn't changing,
+    // so only existing nodes are not being updated.
+    // Eventually, this example is will probably useful to see how
+    // to change the graph structure:
+    // https://observablehq.com/@d3/modifying-a-force-directed-graph
+    updates.forEach(update => {
+        let updateId = update.m.id;
+        let updateNode = nodes.find(node => { return node.id == updateId });
+        // Update (or add) the histogram data.
+        updateNode.inputQueueHistogram = update.m.inputQueueHistogram;
+        updateNode.processingQueueHistogram = update.m.processingQueueHistogram;
+        updateNode.outputQueueHistogram = update.m.outputQueueHistogram;
+
+        // Update (or add) the waiting time data.
+        updateNode.inputQueueTimeWaiting = update.m.inputQueueTimeWaiting;
+        updateNode.processingQueueTimeWaiting = update.m.processingQueueTimeWaiting;
+        updateNode.outputQueueTimeWaiting = update.m.outputQueueTimeWaiting;
+    });
+
+    // Note: eventually, when you add or remove nodes, you can define an
+    // "enter" or "remove" function in join to handle those changes.
+    svg.selectAll("g.gnode")
+		.data(nodes, d => d.id)
+        .join(update => {
+            // update.selectAll("foreignObject")
+            //     .select("div")
+            //     .call(updateDisplayState, d);
+            update.select("text").text("Updated!");
+            // update.select("foreignObject")
+        })
 }
 
 const run = (nodes, links) => {
@@ -283,6 +286,34 @@ const run = (nodes, links) => {
 
     document.turnOnPhysics = () => {
         startSimulation();
+    };
+
+    document.turnOffPhysics = () => {
+        simulation.stop();
+        simulation
+            .force("center", null)
+            .force("nodes", null)
+            .force("radial", null)
+            .force("charge", null)
+            .force("collision", null)
+            .force("links", null);
+    };
+
+    document.startSim = () => {
+        updateGraph(svg, nodes, dataUpdate);
+        client.send({startSim: true});
+    };
+
+    document.stopSim = () => {
+        client.send({stopSim: true});
+    };
+
+    document.pauseSim = () => {
+        client.send({pauseSim: true});
+    };
+
+    document.restartSim = () => {
+        client.send({restartSim: true});
     };
 
     startSimulation();
@@ -385,8 +416,7 @@ if (data.formation) {
         }
     }
 
-    run(
-        Array.from(nodes.values()),
+    run(Array.from(nodes.values()),
         Array.from(links.values())
     );
 }
