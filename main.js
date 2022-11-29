@@ -12,10 +12,6 @@ document.turnOffPhysics = () => {
         .force("links", null);
 };
 
-document.turnOnPhysics = () => {
-    startSimulation();
-};
-
 document.startSim = () => {
     client.send({startSim: true});
 };
@@ -49,7 +45,7 @@ const minRadius = 20;
 // (and eventually number of nodes as well)
 const nodeRadius = Math.max(minRadius, Math.floor(Math.min(width, height) / 25));
 
-const displayStates = ["Metadata", "InputQueueHistogram"]; // "ProcessingQueue", "OutputQueue"];
+const displayStates = ["Metadata", "QueueLengthHistogram", "WaitTimeHistogram"];
 const getNextDisplayState = function (currentState) {
     let idx = displayStates.findIndex((element) => element == currentState)
     return displayStates[(idx + 1) % displayStates.length];
@@ -102,40 +98,41 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
 				.on("end", dragEnd)
 		)
         .on("click", function(e, d) {
-            // TODO(julien): create a separate function to initialize/update display state.
             d.displayState = getNextDisplayState(d.displayState);
-            if (d.displayState == "InputQueueHistogram") {
-                nodeGroups
-                    .selectAll("foreignObject")
-                    .filter(function(d2, i) { return d.id == d2.id;})
-                    .select("div")
-                        .call(createHistogram, d.id);
-            }
             if (d.displayState == "Metadata") {
                 nodeGroups
                 .selectAll("foreignObject")
                 .filter(function(d2, i) { return d.id == d2.id;})
                 .select("div")
-                    .text(d => [
-                        'Updates:', JSON.stringify(d.updateableFields),
-                        "\nID: ", d.id,
-                        "\nName:", d.name,
-                        '\nLabel:', d.label
-                    ].join(' '));
+                    .call(createMetadataText, d);
+            }
+            if (d.displayState == "QueueLengthHistogram") {
+                nodeGroups
+                    .selectAll("foreignObject")
+                    .filter(function(d2, i) { return d.id == d2.id;})
+                    .select("div")
+                        .call(createQueueLengthHistograms, d.id);
+            }
+            if (d.displayState == "WaitTimeHistogram") {
+                nodeGroups
+                    .selectAll("foreignObject")
+                    .filter(function(d2, i) { return d.id == d2.id;})
+                    .select("div")
+                        .call(createWaitTimeHistograms, d.id);
             }
         });
 
 	// Add an image to each node group.
 	nodeGroups.append("image")
 		.attr("x", d => -d.size)
-		.attr("y", d => -1.8 * d.size)
+		.attr("y", d => -2 * d.size )
 		.attr("width", d => d.size / 2)
 		.attr("height", d => d.size / 2)
 		.attr("href", d => d.iconUrl);
 
 	// Add text to each node group.
 	nodeGroups.append("text")
-		.attr("x", d => d.size / 3)
+		.attr("x", d => d.size)
 		.attr("y", d => -1.5 * d.size)
 		.attr("text-anchor", "middle")
 		.text(d => 'Name: ' + d.name);
@@ -144,47 +141,53 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
         .attr("x", -70)
         .attr("y", d => 1.1 * d.size)
         .attr("height", 100)
-        .attr("width", 100)
+        .attr("width", 300)
         .style("overflow", "visible")
         .append("xhtml:div")
-            .text(d => [
-                'Updates:', JSON.stringify(d.updateableFields),
-                "\nID: ", d.id,
-                "\nName:", d.name,
-                '\nLabel:', d.label
-            ].join(' '));
+            .attr("height", 100)
+            .attr("width", 200)
+            .call(createMetadataText);
 };
 
-const getHistoData = (id) => {
+const createMetadataText = function(selection, d) {
+    selection.text(d => [
+        'Updates:', JSON.stringify(d.updateableFields),
+        "\nID: ", d.id,
+        "\nName:", d.name,
+        '\nLabel:', d.label
+    ].join(' '));
+}
+
+const getPlaceholderData = (id) => {
     return [{val: 9.5}, {val: 2}, {val: 2.5}, {val: 3}, {val: 3.3},
         {val: 4}, {val: 5.6}, {val: 2.1}, {val: 1.7}, {val: 7}];
 };
 
 // Creating a basic histogram: https://d3-graph-gallery.com/graph/histogram_basic.html
-const createHistogram = (selection, id) => {
-    selection.text("");
-
-    const data = getHistoData(id);
+const createHistogram = (selection, data, title) => {
     // set the dimensions and margins of the graph
-    const margin = {top: 10, right: 10, bottom: 10, left: 0},
-        width = 120 - margin.left - margin.right,
-        height = 50 - margin.top - margin.bottom;
+    const margin = {top: 20, right: 20, bottom: 20, left: 20},
+        width = 200 - margin.left - margin.right,
+        height = 120 - margin.top - margin.bottom;
 
     let histSvg = selection
         .append("svg")
-        .attr("class", "histogram")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom);
-
-    histSvg.append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            .attr("class", "histogram")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom);
+    
+    // Add a title.
+    histSvg.append("text")
+        .attr("x", margin.left)
+        .attr("y", margin.top - 5)
+        .text(title);
 
     // And apply this function to data to get the bins
     const x = d3.scaleLinear()
-        .domain([0, 10])     // can use this instead of 10 to have the max of data: d3.max(data, function(d) { return +d.value })
+        .domain([0, d3.max(data, function(d) { return +d.val })])
         .range([0, width]);
     histSvg.append("g")
-        .attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(" + margin.left + "," + (height + margin.top) + ")")
         .call(d3.axisBottom(x));
 
     // set the parameters for the histogram
@@ -199,15 +202,16 @@ const createHistogram = (selection, id) => {
 
     // Y axis: scale and draw:
     const y = d3.scaleLinear()
-        .range([height, 0]);
-    y.domain([0, d3.max(bins, function (d) {
-        return d.length;
-    })]);
+        .range([height, 0])
+        .domain([0, d3.max(bins, function (d) { return d.length; })]);
     histSvg.append("g")
-        .call(d3.axisLeft(y));
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .call(d3.axisLeft(y).ticks(4));
 
     // append the bar rectangles to the svg element
-    histSvg.selectAll("rect")
+    histSvg.append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .selectAll("rect")
         .data(bins)
         .enter()
         .append("rect")
@@ -223,6 +227,26 @@ const createHistogram = (selection, id) => {
             })
             .style("fill", "#69b3a2");
 };
+
+const createQueueLengthHistograms = function(selection, id) {
+    selection.text("Queue lengths");
+    selection.attr("height", 400);
+
+    const data = getPlaceholderData(id);
+    createHistogram(selection, data, "Input Queue");
+    createHistogram(selection, data, "Processing Queue");
+    createHistogram(selection, data, "Output Queue");
+}
+
+const createWaitTimeHistograms = function(selection, id) {
+    selection.text("Wait times");
+    selection.attr("height", 400);
+
+    const data = getPlaceholderData(id);
+    createHistogram(selection, data, "Input Queue");
+    createHistogram(selection, data, "Processing Queue");
+    createHistogram(selection, data, "Output Queue");
+}
 
 const run = (nodes, links) => {
     const svg = d3.select('div#container')
@@ -256,6 +280,10 @@ const run = (nodes, links) => {
             )
             .on("tick", ticked);
     }
+
+    document.turnOnPhysics = () => {
+        startSimulation();
+    };
 
     startSimulation();
 
