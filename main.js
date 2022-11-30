@@ -73,7 +73,6 @@ const getNextDisplayState = function (currentState) {
 };
 
 const updateDisplayState = function(div, d) {
-    d.displayState = getNextDisplayState(d.displayState);
     if (d.displayState == "Metadata") {
         div.call(createMetadataText, d);
     }
@@ -144,11 +143,12 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
                 .attr("visibility", "hidden");
         })
         .on("click", function(e, d) {
+            d.displayState = getNextDisplayState(d.displayState);
             let div = histogramGroups
                 .selectAll("foreignObject")
                 .filter(function(d2, i) { return d.id == d2.id;})
-                .select("div");
-            updateDisplayState(div, d);
+                .select("div")
+                .call(updateDisplayState, d);
         });
 
 	// Add an image to each node group.
@@ -190,12 +190,12 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
             .call(createMetadataText);
 };
 
-const createMetadataText = function(selection, d) {
-    selection.text(d => [
-        'Updates:', JSON.stringify(d.updateableFields),
-        "\nID: ", d.id,
-        "\nName:", d.name,
-        '\nLabel:', d.label
+const createMetadataText = function(selection) {
+    selection.text(data => [
+        'Updates:', JSON.stringify(data.updateableFields),
+        "\nID: ", data.id,
+        "\nName:", data.name,
+        '\nLabel:', data.label
     ].join(' '));
 }
 
@@ -295,44 +295,35 @@ const createWaitTimeHistograms = function(selection, d) {
     }
 }
 
-const updateGraph = function(svg, nodes, updates) {
-    // For now, we assume that the graph structure isn't changing,
-    // so only existing nodes are not being updated.
-    // Eventually, this example is will probably useful to see how
-    // to change the graph structure:
-    // https://observablehq.com/@d3/modifying-a-force-directed-graph
-    updates.forEach(update => {
-        let updateId = update.m.id;
-        let updateNode = nodes.find(node => { return node.id == updateId });
-        // Update (or add) the histogram data.
-        updateNode.inputQueueHistogram = update.m.inputQueueHistogram;
-        updateNode.processingQueueHistogram = update.m.processingQueueHistogram;
-        updateNode.outputQueueHistogram = update.m.outputQueueHistogram;
-
-        // Update (or add) the waiting time data.
-        updateNode.inputQueueTimeWaiting = update.m.inputQueueTimeWaiting;
-        updateNode.processingQueueTimeWaiting = update.m.processingQueueTimeWaiting;
-        updateNode.outputQueueTimeWaiting = update.m.outputQueueTimeWaiting;
-    });
-
-    // Note: eventually, when you add or remove nodes, you can define an
+const updateGraph = function(svg, updatedNodes) {
+    // Note: for now, we're assuming that the graph structure is fixed.
+    // Eventually, when you add or remove nodes, you can define an
     // "enter" or "exit" function in join to handle those changes.
+    // See example:
+    // https://observablehq.com/@d3/modifying-a-force-directed-graph
     svg.selectAll("g.gnode")
-		.data(nodes, d => d.id)
+		.data(updatedNodes, d => d.id)
         .join(
-            enter => {
-                console.log("Enter not implemented");
-            },
+            enter => {},
             update => {
-                console.log(update);
-                update.select("text").text(d => "Updated!" + d.id);
-                update.select("foreignObject")
-                    .select("div")
-                    .call(createMetadataText);
+                update.select("text").text(
+                    d => "Name: " + d.name + ", inc: " + d.updateableFields.inc
+                );
             },
-            exit => {
-                console.log("Exit not implemented.")
-            }
+            exit => {}
+        );
+    svg.selectAll("g.ghist")
+        .data(updatedNodes, d => d.id)
+        .join(
+            enter => {},
+            update => {
+                update.selectAll("foreignObject")
+                    .select("div")
+                    .each(function(d, i) {
+                        d3.select(this).call(updateDisplayState, d)
+                    });
+            },
+            exit => {}
         );
 }
 
@@ -445,7 +436,21 @@ const run = (nodes, links) => {
                 }
             }
         ];
-        updateGraph(svg, nodes, dataUpdate);
+        let updatedNodes = nodes;
+        dataUpdate.forEach(update => {
+            let updateId = update.m.id;
+            let updateNode = nodes.find(node => { return node.id == updateId });
+            // Update (or add) the histogram data.
+            updateNode.inputQueueHistogram = update.m.inputQueueHistogram;
+            updateNode.processingQueueHistogram = update.m.processingQueueHistogram;
+            updateNode.outputQueueHistogram = update.m.outputQueueHistogram;
+    
+            // Update (or add) the waiting time data.
+            updateNode.inputQueueTimeWaiting = update.m.inputQueueTimeWaiting;
+            updateNode.processingQueueTimeWaiting = update.m.processingQueueTimeWaiting;
+            updateNode.outputQueueTimeWaiting = update.m.outputQueueTimeWaiting;
+        });
+        updateGraph(svg, updatedNodes);
     }, 3000);
 
     const svg = d3.select('div#container')
@@ -459,27 +464,31 @@ const run = (nodes, links) => {
     setInterval(() => {
 
         // console.log('udpating A...');
-
-        for (let i = 0; i < nodes.length; i++) {
-            // this doesn't really work to force a re-render
-            const n = nodes[i];
-            nodes[i] = Object.assign(n, { // assign new field(s) to *same objects*
-                updateableFields: {
-                    ...n.updateableFields,
-                    // increment some sh*t to force a re-render, or at least to test it out
-                    inc: ++n.updateableFields.inc
-                }
-            });
-        }
+        nodes.map((n) => {
+            n.updateableFields = {
+                ...n.updateableFields,
+                // increment some sh*t to force a re-render, or at least to test it out
+                inc: ++n.updateableFields.inc
+            }
+        });
+        updateGraph(svg, nodes);
+        //     // this doesn't really work to force a re-render
+        //     const n = nodes[i];
+        //     nodes[i] = Object.assign(n, { // assign new field(s) to *same objects*
+        //         updateableFields: {
+        //             ...n.updateableFields,
+        //         }
+        //     });
+        // }
 
         // below is an attempt to update info manually (ideally, only when the data changes)
-        svg
-            .selectAll("circle")
-            // .data(nodes) // pass new data seems good idea
-            .enter()
-            // .attr("r", d => d.size)
-            .attr(val++, val)
-            .attr("fill", d => 'black')
+        // svg
+        //     .selectAll("circle")
+        //     // .data(nodes) // pass new data seems good idea
+        //     .enter()
+        //     // .attr("r", d => d.size)
+        //     .attr(val++, val)
+        //     .attr("fill", d => 'black')
 
         // simulation.alpha(0.5).restart()
         // placeLabelsAndIcons();
@@ -526,7 +535,6 @@ const run = (nodes, links) => {
     };
 
     document.startSim = () => {
-        updateGraph(svg, nodes, dataUpdate);
         client.send({startSim: true});
     };
 
