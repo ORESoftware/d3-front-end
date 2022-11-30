@@ -131,8 +131,20 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
 				.on("drag", drag)
 				.on("end", dragEnd)
 		)
+        .on("mouseover", function(e, d) {
+            // Make the corresponding histogram visible.
+            histogramGroups
+                .filter(function(d2, i) { return d.id == d2.id;})
+                .attr("visibility", "visible");
+        })
+        .on("mouseout", function(e, d) {
+            // Make the corresponding histogram hidden again.
+            histogramGroups
+                .filter(function(d2, i) { return d.id == d2.id;})
+                .attr("visibility", "hidden");
+        })
         .on("click", function(e, d) {
-            let div = nodeGroups
+            let div = histogramGroups
                 .selectAll("foreignObject")
                 .filter(function(d2, i) { return d.id == d2.id;})
                 .select("div");
@@ -154,7 +166,19 @@ const createGraph = function(svg, nodes, links, dragStart, drag, dragEnd) {
 		.attr("text-anchor", "left")
 		.text(d => 'Name: ' + d.name);
 
-    nodeGroups.append("foreignObject")
+    // Create a new group for each histogram.
+    // Note: we use a new group (instead of appending to the
+    // existing nodeGroups) because SVG elements are ordered based
+    // on how they are added to the SVG, and we want the histograms
+    // to show up over other nodes and labels.
+    let histogramGroups = svg.selectAll("g.ghist")
+        .data(nodes, d => d.id)
+        .enter()
+        .append("g")
+            .attr("visibility", "hidden")
+            .attr("class", "ghist");
+
+    histogramGroups.append("foreignObject")
         .attr("x", -70)
         .attr("y", d => 1.1 * d.size)
         .attr("height", 100)
@@ -522,9 +546,15 @@ const run = (nodes, links) => {
 
     function ticked() {
         var nodeGroups = svg.selectAll("g.gnode");
+        var histogramGroups = svg.selectAll("g.ghist");
         var linkSelection = svg.selectAll("line.link");
 
         nodeGroups
+            .attr("transform", function(d) {
+                return "translate(" + [d.x, d.y] + ")";
+            });
+
+        histogramGroups
             .attr("transform", function(d) {
                 return "translate(" + [d.x, d.y] + ")";
             });

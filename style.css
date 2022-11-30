@@ -28,7 +28,7 @@ div#secret {
     left: 0;
 }
 
-g {
+/* g {
     opacity: 0.6;
     transition: opacity 0.2s ease-in-out;
     overflow: visible;
@@ -37,15 +37,14 @@ g {
 
 g:hover {
     opacity: 1;
-}
+} */
 
-g div {
+g.ghist div {
     padding: 10px;
     background: #fff;
     /* text-align: center; */
     vertical-align: middle;
     white-space: pre;
-    visibility: hidden;
     border-radius: 10px;
     box-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
 }
