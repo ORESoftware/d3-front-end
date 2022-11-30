@@ -462,8 +462,6 @@ const run = (nodes, links) => {
 
     let val = 0;
     setInterval(() => {
-
-        // console.log('udpating A...');
         nodes.map((n) => {
             n.updateableFields = {
                 ...n.updateableFields,
@@ -472,6 +470,7 @@ const run = (nodes, links) => {
             }
         });
         updateGraph(svg, nodes);
+        // Old attempt at updating and re-rendering nodes:
         //     // this doesn't really work to force a re-render
         //     const n = nodes[i];
         //     nodes[i] = Object.assign(n, { // assign new field(s) to *same objects*
