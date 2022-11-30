@@ -1,5 +1,28 @@
+document.turnOnPhysics = () => {
+    alert('simulation not yet started.');
+};
+
+document.turnOffPhysics = () => {
+    alert('simulation not yet started.');
+};
+
+document.restartSim = () => {
+    alert('simulation not yet started.');
+};
+
+document.startSim = () => {
+    alert('simulation not yet started.');
+};
+
+document.pauseSim = () => {
+    alert('simulation not yet started.');
+};
+
+document.stopSim = () => {
+    alert('simulation not yet started.');
+};
+
 const client = new WebSocket('ws://0.0.0.0:5900');
-let simulation;
 
 client.addEventListener('message', m => {
     console.log('change event:', m);
@@ -10,6 +33,31 @@ client.addEventListener('error', e => {
     console.log(e); // we don't want any unnecessary red crap in the browser console
     console.log('start the ws-server using live-reload.js in the project root to get live updates.')
 });
+
+// const program = {
+//     ctrlKey: false,
+//     metaKey: false
+// };
+
+// document.onkeydown = (event) => {
+//     if (event.key === 'Control') {  // this doesn't really seem to work
+//         program.ctrlKey = true;
+//     }
+//     if (event.key === 'Meta') {
+//         program.metaKey = true;
+//     }
+//     // console.log({program});
+// };
+
+// document.onkeyup = (event) => {
+//     if (event.key === 'Control') {  // this doesn't really seem to work
+//         program.ctrlKey = false;
+//     }
+//     if (event.key === 'Meta') {
+//         program.metaKey = true;
+//     }
+//     // console.log({program});
+// };
 
 const width = window.innerWidth;
 const height = window.innerHeight;
@@ -265,12 +313,153 @@ const updateGraph = function(svg, nodes, updates) {
 }
 
 const run = (nodes, links) => {
+    setTimeout(() => {
+
+        // TODO: dynamically add a new node/link
+        // TODO: this doesn't work yet :/
+        return;
+
+        // dynamically add a new node
+        nodes.push({
+            color: colors[colorIndex++ % nodes.length],
+            size: nodeRadius,
+            label: 'Z',
+            name: 'Z',
+            id: 'Z',
+            iconUrl: 'https://raw.githubusercontent.com/ORESoftware/d3-front-end/main/images/server-node.svg',
+            histogramShowing: false
+        });
+
+        // dynamically add a new link
+        links.push({
+            source: 'Z',
+            target: 'E'
+        });
+
+    }, 5000);
+
+    setTimeout(() => {
+
+        // list is coming from backend, list will always be about 10-20 objects in an array
+        // the main idea is to update the histogram information
+        // and to tell the graph how to animate objects going from node A --> node B
+        const dataUpdate = [
+            {
+                "type": "GRAPH_DATA:PROCESSING",
+                "m": {  // is just m for message, probably should give it a better name, but will keep it for now
+                    "timeStepCount": 108,
+                    "id": "D",
+                    "rv": {
+                        "lambda": 0.1
+                    },
+                    "queue": {
+                        "size": 0
+                    },
+                    "maxQueueSize": -1,
+                    "opts": {
+                        "xx": true
+                    },
+                    "isProcessor": true,
+                    "concurrency": 15,
+                    "inputQueue": {
+                        "size": 2
+                    },
+                    "processingQueue": {
+                        "size": 1
+                    },
+                    "outQueue": {
+                        "size": 0
+                    },
+                    "totalServerBusyTime": 135000,
+                    "totalServerIdleTime": 675000,
+                    "processedCount": 270,
+                    "inputQueueHistogram": {
+                        "0": 44500, // the value is the amount of time spent with queue size = 0
+                        "4": 500,  // the value is the amount of time spent with queue size = 4
+                        "11": 500, // // the value is the amount of time spent with queue size = 11
+                        "15": 4000,
+                        "19": 500,
+                        "30": 4000
+                    },
+                    "processingQueueHistogram": {
+                        "0": 44500,  // the value is the amount of time spent with queue size = 0
+                        "4": 500,   // the value is the amount of time spent with queue size = 4
+                        "11": 500,
+                        "15": 8500  // interesting that the first 4 values mirror the input queue
+                    }
+                },
+                // NOTE: connection information is fairly static (won't change much over time as simulation proceeds)
+                // *however* to represent disconnects we can dynamically route movables and "turn off" a certain destination
+                // but I don't see why we would ever need to dynamically *disconnect* nodes, however: we
+                // may want to dynamically *connect* one node to another....TBD
+                "connectionsIn": {
+                    "size": 0,
+                    "values": []
+                },
+                "connectionsOut": {
+                    "size": 1,
+                    "values": [
+                        "A"
+                    ]
+                },
+                // NOTE: movable items represents a count (group by origin) of items from a previous node
+                // this is primarily for animating the graph, showing things moving from one node to another
+                // this means the animation might be a half-second or full-second behind the simulation,
+                // but that should be fine
+                "movableItems": {
+                    "from": {
+                        "A": {
+                            "count": 3
+                        },
+                        "B": {
+                            "count": 7
+                        },
+                        "D": {
+                            "count": 6
+                        }
+                    }
+                }
+            }
+        ];
+        updateGraph(svg, nodes, dataUpdate);
+    }, 3000);
+
     const svg = d3.select('div#container')
         .append('svg')
         .attr("viewBox", "0 0 " + window.innerWidth + " " + window.innerHeight);
 
     createGraph(svg, nodes, links, dragStart, drag, dragEnd);
-    simulation = d3.forceSimulation(nodes);
+    let simulation = d3.forceSimulation(nodes);
+
+    let val = 0;
+    setInterval(() => {
+
+        // console.log('udpating A...');
+
+        for (let i = 0; i < nodes.length; i++) {
+            // this doesn't really work to force a re-render
+            const n = nodes[i];
+            nodes[i] = Object.assign(n, { // assign new field(s) to *same objects*
+                updateableFields: {
+                    ...n.updateableFields,
+                    // increment some sh*t to force a re-render, or at least to test it out
+                    inc: ++n.updateableFields.inc
+                }
+            });
+        }
+
+        // below is an attempt to update info manually (ideally, only when the data changes)
+        svg
+            .selectAll("circle")
+            // .data(nodes) // pass new data seems good idea
+            .enter()
+            // .attr("r", d => d.size)
+            .attr(val++, val)
+            .attr("fill", d => 'black')
+
+        // simulation.alpha(0.5).restart()
+        // placeLabelsAndIcons();
+    }, 1000);
 
     const startSimulation = () => {
         simulation
