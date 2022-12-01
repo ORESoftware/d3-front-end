@@ -65,13 +65,17 @@ const colors = [
     'blue',
     'brown',
     'indigo',
+    '#B2B000',
     'purple',
-    'orange',
-    'pink',
-    'yellow',
+    '#0000FF',
+    '#F80F8F',
+    // 'orange',
+    // 'pink',
+    // 'yellow',
     'maroon',
+    '#00008B',
     'black',
-    'magenta',
+    // 'magenta',
     'green',
     'gray',
     'violet'
@@ -132,6 +136,7 @@ const placeLabelsAndIcons = () => {
         .attr("x", d => d.x + d.size / 3)
         .attr("y", d => d.y - 1.5 * d.size)
         .attr("text-anchor", "middle")
+        .attr("font-weight",function(d,i) {return i*100+100;})
         .text(d => 'Name: ' + d.name);
 
     let divs = gs.append("foreignObject")
@@ -575,15 +580,15 @@ const linksByTarget = new Map();
 const data = {
     formation: [
         {
-            "name": "A",
-            "id": "A",
+            "name": "main-source",
+            "id": "main-source",
             "entity": {
                 "initialGraphData": true
             },
             "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
-            "label": "A",
+            "label": "main-source",
             "connectionsOut": [
-                "B", "C"
+                "S"
             ],
             "updateableFields": {
                 inc: 1,
@@ -592,64 +597,13 @@ const data = {
             }
         },
         {
-            "name": "F",
-            "id": "F",
+            "name": "S",
+            "id": "S",
             "entity": {
                 "initialGraphData": true
             },
             "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
-            "label": "F",
-            "connectionsOut": [
-                "C"
-            ],
-            "updateableFields": {
-                inc: 1,
-                serverUtilization: 1,
-                queueHistogram: {},
-            }
-        },
-        {
-            "name": "B",
-            "id": "B",
-            "entity": {
-                "initialGraphData": true
-            },
-            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
-            "label": "B",
-            "connectionsOut": [
-                "C"
-            ],
-            "updateableFields": {
-                inc: 1,
-                serverUtilization: 1,
-                queueHistogram: {},
-            }
-        },
-        {
-            "name": "C",
-            "id": "C",
-            "entity": {
-                "initialGraphData": true
-            },
-            "iconUrl": "./images/arrow-sink.svg",
-            "label": "C",
-            "connectionsOut": [
-                "D"
-            ],
-            "updateableFields": {
-                inc: 1,
-                serverUtilization: 1,
-                queueHistogram: {},
-            }
-        },
-        {
-            "name": "D",
-            "id": "D",
-            "entity": {
-                "initialGraphData": true
-            },
-            "iconUrl": "./images/arrow-source.svg",
-            "label": "D",
+            "label": "S",
             "connectionsOut": [
                 "E"
             ],
@@ -665,8 +619,197 @@ const data = {
             "entity": {
                 "initialGraphData": true
             },
-            "iconUrl": "./images/noun-up-3815871.svg",
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
             "label": "E",
+            "connectionsOut": [
+                "I-P"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "I-P",
+            "id": "I-P",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "https://oyster.ignimgs.com/mediawiki/apis.ign.com/new-super-mario-bros-u/4/48/Yoshi.png",
+            "label": "I-P",
+            "connectionsOut": [
+                "I-P-Decision"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "I-P-Decision",
+            "id": "I-P-Decision",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/arrow-sink.svg",
+            "label": "I-P-Decision",
+            "connectionsOut": [
+                "I-A","I-S"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "I-A",
+            "id": "I-A",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/arrow-source.svg",
+            "label": "I-A",
+            "connectionsOut": [
+                "R"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "I-S",
+            "id": "I-S",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/arrow-source.svg",
+            "label": "I-S",
+            "connectionsOut": [
+                "I-S-Decision"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "I-S-Decision",
+            "id": "I-S-Decision",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/arrow-source.svg",
+            "label": "I-S",
+            "connectionsOut": [
+                "R","I-H"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "I-H",
+            "id": "I-H",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/arrow-source.svg",
+            "label": "I-H",
+            "connectionsOut": [
+                "I-H-Decision"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "I-H-Decision",
+            "id": "I-H-Decision",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/arrow-source.svg",
+            "label": "I-H-Decision",
+            "connectionsOut": [
+                "R","D"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "R",
+            "id": "R",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/noun-up-3815871.svg",
+            "label": "R",
+            "connectionsOut": [
+                "Delay-Process"
+            ]
+            ,
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "Delay-Process",
+            "id": "Delay-Process",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/noun-up-3815871.svg",
+            "label": "Delay-Process",
+            "connectionsOut": [
+                "S"
+            ]
+            ,
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "D",
+            "id": "D",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/noun-up-3815871.svg",
+            "label": "D",
+            "connectionsOut": [
+                "main-sink"
+            ],
+            "updateableFields": {
+                inc: 1,
+                serverUtilization: 1,
+                queueHistogram: {},
+            }
+        },
+        {
+            "name": "main-sink",
+            "id": "main-sink",
+            "entity": {
+                "initialGraphData": true
+            },
+            "iconUrl": "./images/noun-up-3815871.svg",
+            "label": "main-sink",
             "connectionsOut": [],
             "updateableFields": {
                 inc: 1,
